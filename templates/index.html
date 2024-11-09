@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <title>Points d'Articulation</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Trouver les Points d'Articulation</h1>
+
+        <div id="graph-container" style="width: 100%; height: 400px;"></div>
+
+        <div>
+            <button id="calculate-articulation">Calculer les Points d'Articulation</button>
+        </div>
+
+        <div>
+            <button id="clear-graph">Vider le Graph</button>
+        </div>
+
+        <div id="articulation-points">
+            <h2>Points d'Articulation :</h2>
+            <ul id="articulation-list"></ul>
+        </div>
+
+        <!-- "Retour" button for going back -->
+        <div>
+            <button id="back-button">
+                <a href="/" style="text-decoration: none; color: white;">Retour</a>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        var nodes = new vis.DataSet([]);
+        var edges = new vis.DataSet([]);
+        var container = document.getElementById("graph-container");
+
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+            nodes: { shape: 'dot', size: 15 },
+            interaction: {
+                dragNodes: true,
+                dragView: true,
+                zoomView: true
+            },
+            physics: {
+                enabled: true
+            },
+            edges: {
+                smooth: false
+            },
+            manipulation: {
+                enabled: true,
+                addNode: function (data, callback) {
+                    var nodeName = prompt("Entrez le nom du noeud :");
+                    if (nodeName && !nodes.get(nodeName)) {
+                        data.id = nodeName;
+                        data.label = nodeName;  // Use node name as label
+                        nodes.add(data);
+                        // Send the new node to the backend to store it
+                        fetch('/add_node', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ node: nodeName })
+                        }).then(response => response.json())
+                          .then(data => console.log(data.message));  // Logging success
+                    } else {
+                        alert("Le nom du noeud doit être unique!");
+                    }
+                    callback(data);  // Ensure the callback is executed after node is added
+                },
+                deleteNode: function (data, callback) {
+                    fetch('/remove_node', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ node: data.id })
+                    }).then(response => response.json())
+                      .then(data => console.log(data.message));  
+                    callback(data);  
+                },
+                addEdge: function (data, callback) {
+                    fetch('/add_edge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ node1: data.from, node2: data.to })
+                    }).then(response => response.json())
+                      .then(data => console.log(data.message));  
+                    callback(data);  
+                }
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+
+        // Button to calculate articulation points
+        document.getElementById("calculate-articulation").onclick = function () {
+            fetch('/calculate_articulation', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                const articulationPoints = data.articulation_points;
+                updateArticulationPoints(articulationPoints);
+                highlightArticulationPoints(articulationPoints);
+            });
+        };
+
+        function updateArticulationPoints(points) {
+            const list = document.getElementById("articulation-list");
+            list.innerHTML = ''; // Clear the existing list
+            points.forEach(point => {
+                const li = document.createElement("li");
+                li.textContent = point;  // Add each point to the list
+                list.appendChild(li);
+            });
+        }
+
+        function highlightArticulationPoints(points) {
+            nodes.forEach(node => {
+                if (points.includes(node.id)) {
+                    nodes.update({ id: node.id, color: { background: 'red' } });
+                } else {
+                    nodes.update({ id: node.id, color: { background: 'lightblue' } });
+                }
+            });
+        }
+
+        // Clear Graph
+        document.getElementById("clear-graph").onclick = function () {
+            nodes.clear();
+            edges.clear();
+            fetch('/clear_graph', { method: 'POST' });  
+        };
+
+    </script>
+</body>
+</html>
