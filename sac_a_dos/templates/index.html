@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Game</title>
+</head>
+<body>
+    <h1>Jeu du Problème de Sac à Dos</h1>
+    <form id="knapsackForm">
+        <div>
+            <label>Capacité maximale du sac à dos:</label>
+            <input type="number" id="maxWeight" required>
+        </div>
+        <div id="items">
+            <h3>Ajouter des objets</h3>
+            <input type="number" placeholder="Poids" id="weight" required>
+            <input type="number" placeholder="Gain" id="value" required>
+            <button type="button" onclick="addItem()">Ajouter l’objet</button>
+        </div>
+        <button type="button" onclick="solveKnapsack()">Résoudre</button>
+    </form>
+    
+    <h2>Résultat</h2>
+    <p id="result"></p>
+
+    <script>
+        let items = [];
+        
+        function addItem() {
+            const weight = document.getElementById('weight').value;
+            const value = document.getElementById('value').value;
+            items.push({ weight: parseInt(weight), value: parseInt(value) });
+            document.getElementById('items').innerHTML += `<p>Objet - Poids: ${weight}, Gain: ${value}</p>`;
+        }
+        
+        async function solveKnapsack() {
+            const maxWeight = document.getElementById('maxWeight').value;
+            const weights = items.map(item => item.weight);
+            const values = items.map(item => item.value);
+            
+            const response = await fetch('/solve_knapsack', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ weights, values, max_weight: parseInt(maxWeight) })
+            });
+            
+            const result = await response.json();
+            document.getElementById('result').innerText = `Gain maximal: ${result.max_value}, Objets sélectionnés: ${result.selected_items}`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Sac à Dos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .selected {
+            background-color: brown;
+            color: white;
+        }
+
+        .progress-bar-container {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            height: 25px;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background-color: #4caf50;
+            text-align: center;
+            color: white;
+            line-height: 25px;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+        .item-card {
+            cursor: pointer;
+        }
+
+        #result-text {
+            font-size: 18px;
+        }
+
+        #total-weight, #total-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #remaining-weight {
+            font-size: 14px;
+        }
+
+        #optimal-solution {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bienvenue dans le jeu de Sac à Dos</h1>
+            <p>Sélectionnez les objets à mettre dans votre sac, en respectant le poids maximum autorisé.</p>
+        </header>
+
+        <!-- User Inputs -->
+        <div class="input-group">
+            <label for="max-weight">Poids maximum du sac (kg) :</label>
+            <input type="number" id="max-weight" value="10" min="1" class="input-field">
+        </div>
+
+        <!-- Item Selection -->
+        <h3>Sélectionnez vos objets :</h3>
+        <div class="items-grid">
+            {% for item in items %}
+                <div class="item-card" data-id="{{ item.id }}" data-weight="{{ item.weight }}" data-value="{{ item.value }}">
+                    <img src="{{ url_for('static', filename='images/' + item.icon) }}" alt="{{ item.name }}" class="item-icon">
+                    <div class="item-info">
+                        <h5>{{ item.name }}</h5>
+                        <p>Poids : {{ item.weight }}kg <br> Valeur : {{ item.value }}€</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+            <label for="progress-bar">Poids restant :</label>
+            <div class="progress-bar">
+                <div id="progress-bar-inner" class="progress-bar-inner">0/0</div>
+            </div>
+            <p id="remaining-weight"></p> <!-- Added to show remaining weight -->
+        </div>
+
+        <!-- Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="solve-btn">Résoudre le problème</button>
+        </div>
+
+        <!-- Solution Display -->
+        <div id="result" class="result-container" style="display:none;">
+            <h3>Résultat</h3>
+            <p id="result-text"></p>
+            <h4>Objets sélectionnés:</h4>
+            <ul id="selected-items"></ul>
+            <h4>Poids Total : <span id="total-weight"></span>kg</h4>
+            <h4>Valeur Totale : <span id="total-value"></span>€</h4>
+
+            <button class="btn btn-success" id="validate-btn">Vérifier la validité</button>
+            <button class="btn btn-info" id="optimal-btn">Voir la solution optimale</button>
+
+            <!-- Optimal Solution -->
+            <div id="optimal-solution" class="mt-3">
+                <h4>Solution optimale :</h4>
+                <ul id="optimal-items"></ul>
+                <h4>Valeur optimale : <span id="optimal-value"></span></h4>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let selectedItems = [];
+        let totalWeight = 0;
+        let totalValue = 0;
+
+        // Handle item selection and highlight
+        $('.item-card').click(function() {
+            const itemId = $(this).data('id');
+            const itemWeight = $(this).data('weight');
+            const itemValue = $(this).data('value');
+            const itemIndex = selectedItems.findIndex(item => item.id === itemId);
+
+            // If item is already selected, deselect it
+            if (itemIndex !== -1) {
+                selectedItems.splice(itemIndex, 1);
+                $(this).removeClass('selected');
+                totalWeight -= itemWeight;
+                totalValue -= itemValue;
+            } else {
+                // If item is not selected, select it only if total weight is not exceeded
+                if (totalWeight + itemWeight <= parseInt($('#max-weight').val())) {
+                    selectedItems.push({ id: itemId, weight: itemWeight, value: itemValue });
+                    $(this).addClass('selected');
+                    totalWeight += itemWeight;
+                    totalValue += itemValue;
+                } else {
+                    alert('Le poids total ne doit pas dépasser la limite.');
+                }
+            }
+
+            // Update progress bar and remaining weight
+            updateProgressBar();
+        });
+
+        // Update progress bar, remaining weight and prevent selection if max weight is exceeded
+        function updateProgressBar() {
+            const maxWeight = parseInt($('#max-weight').val());
+            const remainingWeight = maxWeight - totalWeight;
+            const progressPercentage = (totalWeight / maxWeight) * 100;
+
+            $('#progress-bar-inner').css('width', progressPercentage + '%');
+            $('#progress-bar-inner').text(`${totalWeight}/${maxWeight}kg`);
+
+            // Show remaining weight
+            $('#remaining-weight').text(`Poids restant: ${remainingWeight}kg`);
+
+            // Disable further selection if max weight is exceeded
+            if (totalWeight > maxWeight) {
+                $('.item-card').prop('disabled', true);
+            } else {
+                $('.item-card').prop('disabled', false);
+            }
+        }
+
+        // Solve knapsack problem
+        $('#solve-btn').click(function() {
+            const maxWeight = parseInt($('#max-weight').val());
+        
+            $.ajax({
+                url: '/solve_knapsack',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    max_weight: maxWeight,
+                    selected_items: selectedItems.map(item => item.id)
+                }),
+                success: function(response) {
+                    $('#result').show();
+                    $('#result-text').text(response.is_valid ? 'La solution est valide.' : 'La solution dépasse le poids maximum.');
+                    $('#total-weight').text(response.total_weight);
+                    $('#total-value').text(response.total_value);
+        
+                    // Affichage des objets sélectionnés
+                    $('#selected-items').empty();
+                    response.selected_items.forEach(item => {
+                        $('#selected-items').append(`<li>${item.name} (Poids: ${item.weight}kg, Valeur: ${item.value})</li>`);
+                    });
+        
+                    // Affichage de la solution optimale
+                    $('#optimal-items').empty();
+                    response.optimal_solution.forEach(item => {
+                        $('#optimal-items').append(`<li>${item.name} (Poids: ${item.weight}kg, Valeur: ${item.value})</li>`);
+                    });
+                    $('#optimal-value').text(response.optimal_solution_value);
+                    $('#optimal-solution').show();
+                }
+            });
+        });
+        
+
+
+        // Validate solution
+        $('#validate-btn').click(function() {
+            const maxWeight = parseInt($('#max-weight').val());
+            alert(totalWeight <= maxWeight ? 'Solution valide' : 'Solution invalide: Poids excessif');
+        });
+    </script>
+</body>
+</html>
