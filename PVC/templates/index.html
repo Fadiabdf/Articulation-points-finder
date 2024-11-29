@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problème du Voyageur de Commerce</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to top, white, #ADD8E6); /* Light blue gradient */
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        #graph-heuristic, #graph-exact {
+            height: 400px;
+            border: 1px solid black;
+            margin: 10px 0;
+        }
+
+        #network-container {
+            width: 80%;
+            height: 400px;
+            margin: 20px auto;
+            border: 1px solid black;
+            display: block;
+        }
+
+        #matrix-inputs {
+            margin: 20px 0;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        select, input[type="number"] {
+            padding: 5px;
+            font-size: 1rem;
+        }
+
+        .graph-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .graph-box {
+            width: 48%;
+            border: 1px solid black;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .results-text {
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Problème du Voyageur de Commerce</h1>
+
+    <!-- Section for graph generation -->
+    <section>
+        <label for="num-cities">Nombre de villes :</label>
+        <input type="number" id="num-cities" min="2" placeholder="Ex : 4">
+        <button onclick="generateGraph()">Générer le graphe</button>
+    </section>
+
+    <!-- Section for cost matrix input -->
+    <section>
+        <div id="matrix-inputs"></div>
+        <button id="solve-btn" class="hidden" onclick="solveTSP()">Résoudre</button>
+    </section>
+
+    <!-- Section to select start city -->
+    <section>
+        <label for="start-city">Choisissez la ville de départ :</label>
+        <select id="start-city">
+            <option value="0">Ville 0</option>
+        </select>
+    </section>
+
+    <!-- Original graph container -->
+    <section>
+        <div id="network-container"></div>
+    </section>
+
+    <!-- Section for results with two graphs below the original graph -->
+    <section class="graph-section">
+        <div class="graph-box" id="graph-heuristic-container">
+            <h3>Brute Force</h3>
+            <p class="results-text">Coût du chemin: <span id="cost-heuristic"></span></p>
+            <p class="results-text">Temps d'exécution: <span id="time-heuristic"></span></p>
+            <div id="graph-heuristic"></div>
+        </div>
+        <div class="graph-box" id="graph-exact-container">
+            <h3>Kruskal</h3>
+            <p class="results-text">Coût du chemin: <span id="cost-exact"></span></p>
+            <p class="results-text">Temps d'exécution: <span id="time-exact"></span></p>
+            <div id="graph-exact"></div>
+        </div>
+    </section>
+
+    <!-- Results text container -->
+    <section id="results"></section>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

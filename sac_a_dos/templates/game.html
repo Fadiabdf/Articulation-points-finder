@@ -77,7 +77,7 @@
                     <img src="{{ url_for('static', filename='images/' + item.icon) }}" alt="{{ item.name }}" class="item-icon">
                     <div class="item-info">
                         <h5>{{ item.name }}</h5>
-                        <p>Poids : {{ item.weight }}kg <br> Valeur : {{ item.value }}€</p>
+                        <p>Poids : {{ item.weight }}kg <br> Valeur : {{ item.value }}</p>
                     </div>
                 </div>
             {% endfor %}
@@ -104,7 +104,7 @@
             <h4>Objets sélectionnés:</h4>
             <ul id="selected-items"></ul>
             <h4>Poids Total : <span id="total-weight"></span>kg</h4>
-            <h4>Valeur Totale : <span id="total-value"></span>€</h4>
+            <h4>Valeur Totale : <span id="total-value"></span></h4>
 
             <button class="btn btn-success" id="validate-btn">Vérifier la validité</button>
             <button class="btn btn-info" id="optimal-btn">Voir la solution optimale</button>
@@ -114,6 +114,7 @@
                 <h4>Solution optimale :</h4>
                 <ul id="optimal-items"></ul>
                 <h4>Valeur optimale : <span id="optimal-value"></span></h4>
+                <h4>Complexité : <span id="optimal-value"> O(10log(10)) </span></h4>
             </div>
         </div>
     </div>
